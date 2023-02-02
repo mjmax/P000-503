@@ -25,6 +25,10 @@ typedef struct
   char (*cmd_fn)(uint8_t mode,char *str);
 }cmd_t;
 
+#define REG_SOFTWARE_VER            0x0001
+#define REG_HARDWARE_VER            0x0002
+#define REG_SERIAL_NUMBER           0x0003
+
 #define REG_ZERO_CAL_SEN0           0x0010
 #define REG_ZERO_CAL_SEN1           0x0011
 #define REG_ZERO_CAL_SEN2           0x0012
@@ -76,7 +80,7 @@ typedef struct
 #define R_W_  (REG_WRITABLE)
 #define R__E  (REG_EXECUTABLE)
 
-#define BUFFER_SIZE        256
+#define BUFFER_SIZE       256
 #define MILI_TO_SECOND    1000
 #define SECOND_TO_MINUTE  60
 #define SAMPLE_RATE       10
@@ -86,6 +90,11 @@ typedef struct
 #define BASE_DECIMAL      10
 #define GRADF_TO_GRAD     100000
 #define MAX_SAMPLES       144
+#define SOFT_VER_MAIN     0
+#define SOFT_VER_SUB      1
+#define HARD_VER_MAIN     0
+#define HARD_VER_SUB      1
+#define SERIAL_NUMBER     1
 
 #define PROTOCOL_SEPERATOR ':'
 
@@ -122,12 +131,20 @@ void WriteRinRegister(void);
 void ReplyRinCmd(void);
 void MakeHeader(char *message);
 long hex_to_long(char *string, unsigned short width);
+void substr(char *str, uint8_t str_val, uint8_t end_val, char *ans);
 
+char SoftwareVersion(uint8_t mode, char *str);
+char HardwareVersion(uint8_t mode, char *str);
+char SerialNumber(uint8_t mode, char *str);
 char SampleFunction(uint8_t mode, char *str);
 char NullTest(uint8_t mode, char *str);
 
 static const cmd_t cmdSet[]=
 {
+  {REG_SOFTWARE_VER,                    RR__,   SoftwareVersion},
+  {REG_HARDWARE_VER,                    RR__,   HardwareVersion},
+  {REG_SERIAL_NUMBER,                   RR__,   SerialNumber},
+
   {REG_ZERO_CAL_SEN0,                   RR_E,   SampleFunction},
   {REG_ZERO_CAL_SEN1,                   RR_E,   SampleFunction},
   {REG_ZERO_CAL_SEN2,                   RR_E,   SampleFunction},
@@ -371,6 +388,20 @@ void commandHandle(char *msg)
   if (isMsgValid(msg))
   {
     cp = strchr(msg,PROTOCOL_SEPERATOR);
+    /*
+    if((uint8_t)(cp) > MIN_CMD_LENGTH)
+    {
+      memset(header, '\0', heade_array_lenght);
+      substr(msg,(uint8_t)cp - MIN_CMD_LENGTH + 1,(uint8_t)cp,header);
+      //strncpy( header , msg , headerLength );
+    }
+    else
+    {
+      headerLength = (uint8_t)(cp - msg);
+      memset(header, '\0', heade_array_lenght);
+      strncpy( header , msg , headerLength );
+    }
+    */
     headerLength = (uint8_t)(cp - msg);
     memset(header, '\0', heade_array_lenght);
     strncpy( header , msg , headerLength );
@@ -389,6 +420,11 @@ void commandHandle(char *msg)
     ProccessCmd();
     //showResults(res, str); 
   }
+}
+
+void substr(char *str, uint8_t str_val, uint8_t end_val, char *ans) 
+{
+    strncpy(ans, str+str_val, end_val);
 }
 
 void updateHeader(char *hdr)
@@ -700,6 +736,71 @@ char SampleFunction(uint8_t mode, char *str)
   return status;
 }
 
+char SoftwareVersion(uint8_t mode, char *str)
+{
+  char status = 0; 
+
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    // nothing to Exicute
+    //status = 23;
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "V%d.%02d;", SOFT_VER_MAIN, SOFT_VER_SUB);
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    // noting to write
+    break;
+  }
+  return status;
+}
+
+char HardwareVersion(uint8_t mode, char *str)
+{
+  char status = 0; 
+
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    // nothing to Exicute
+    //status = 23;
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "V%d.%02d;", HARD_VER_MAIN, HARD_VER_SUB);
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    // noting to write
+    break;
+  }
+  return status;
+}
+
+char SerialNumber(uint8_t mode, char *str)
+{
+  char status = 0; 
+
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    // nothing to Exicute
+    //status = 23;
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%07d;", SERIAL_NUMBER);
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    // noting to write
+    break;
+  }
+  return status;
+}
 
 char NullTest(uint8_t mode, char *str)
 {

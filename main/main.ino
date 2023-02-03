@@ -2,8 +2,9 @@
 //    FILE: main.ino
 //  AUTHOR: Janaka
 // VERSION: 0.01
-// PURPOSE: read multiple analog inputs continuously
-//          interrupt driven to catch all conversions.
+// PURPOSE: read multiple analog inputs continuously interrupt 
+//          driven to catch all conversions and send the value 
+//          via the communication protocol.
 //
 #include "ADS1X15.h"
 #include <stdio.h>
@@ -108,6 +109,7 @@ uint8_t buffer_count = 0;
 uint16_t time_count = 0;
 uint16_t second_count = 0;
 uint16_t minute_count = 0;
+uint8_t testLEDPin = 13;
 
 ///..............PROGRAM.............///
 void initTimer(void);
@@ -199,7 +201,9 @@ int16_t val[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 void setup()
 {
+  pinMode(testLEDPin,OUTPUT);
   Serial.begin(115200);
+  initTimer();
   //Serial.println(__FILE__);
   //Serial.print("ADS1X15_LIB_VERSION: ");
   //Serial.println(ADS1X15_LIB_VERSION);
@@ -301,8 +305,6 @@ bool handleConversion(void)
   return rv;
 }
 
-
-
 void initTimer(void)
 {
   TCCR0A=(1<<WGM01);    //Set the CTC mode   
@@ -325,12 +327,17 @@ void initCmdDet(void)
 
 void idle(void)
 {
+  //static bool status_pin = true;
   handleConversion();
-  
   if(time_count > (MILI_TO_SECOND - 1))
   {
     second_count++;
     time_count = 0;
+//    if(status_pin)
+//      digitalWrite(testLEDPin,HIGH);
+//     else
+//      digitalWrite(testLEDPin,LOW);
+//    status_pin = !status_pin;
   }
   
   if(second_count > (SECOND_TO_MINUTE - 1))

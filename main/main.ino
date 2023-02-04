@@ -96,6 +96,9 @@ typedef struct
 #define HARD_VER_MAIN     0
 #define HARD_VER_SUB      1
 #define SERIAL_NUMBER     1
+#define EXT_ADC_1_ADD     0x49
+#define EXT_ADC_2_ADD     0x48
+#define EXT_BAUD_RATE     115200
 
 #define PROTOCOL_SEPERATOR ':'
 
@@ -110,9 +113,21 @@ uint16_t time_count = 0;
 uint16_t second_count = 0;
 uint16_t minute_count = 0;
 uint8_t testLEDPin = 13;
+//  two interrupt flags for external ADCs
+volatile bool RDY_1 = false;
+volatile bool RDY_2 = false;
+uint8_t RDY_Pin_1 = 2;        // interrupt pin for device 1
+uint8_t RDY_Pin_2 = 3;        // interrupt pin for device 2
+uint8_t channel_1 = 0;         // channel from device 1(this variable count channels 1 to 4 of 1st external ADC)
+uint8_t channel_2 = 0;         // channel from device 2(this variable count channels 1 to 4 of 2nd external ADC)
+//  array to hold the data.
+int16_t val[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 ///..............PROGRAM.............///
 void initTimer(void);
+void initSerial(void);
+void initExtAdc(void);
+void initVoltageRead(void);
 void initCmdDet(void);
 void idle(void);
 bool handleConversion(void);
@@ -182,66 +197,16 @@ static const cmd_t cmdSet[]=
 
 
 // adjust addresses if needed
-ADS1115 ADS_1(0x49);
-ADS1115 ADS_2(0x48);
-
-//  two interrupt flags
-volatile bool RDY_1 = false;
-volatile bool RDY_2 = false;
-
-uint8_t RDY_Pin_1 = 2;        // interrupt pin for device 1
-uint8_t RDY_Pin_2 = 3;        // interrupt pin for device 2
-
-uint8_t channel_1 = 0;         // channel from device 1
-uint8_t channel_2 = 0;         // channel from device 2
-
-//  array to hold the data.
-int16_t val[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
+ADS1115 ADS_1(EXT_ADC_1_ADD);
+ADS1115 ADS_2(EXT_ADC_2_ADD);
 
 void setup()
 {
   pinMode(testLEDPin,OUTPUT);
-  Serial.begin(115200);
   initTimer();
-  //Serial.println(__FILE__);
-  //Serial.print("ADS1X15_LIB_VERSION: ");
-  //Serial.println(ADS1X15_LIB_VERSION);
-
-  // SETUP FIRST ADS1115
-  ADS_1.begin();
-  ADS_1.setGain(0);        // 6.144 volt
-  ADS_1.setDataRate(7);
-
-  // SET ALERT RDY PIN
-  ADS_1.setComparatorThresholdHigh(0x8000);
-  ADS_1.setComparatorThresholdLow(0x0000);
-  ADS_1.setComparatorQueConvert(0);
-
-  // SET INTERRUPT HANDLER TO CATCH CONVERSION READY
-  pinMode(RDY_Pin_1, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(RDY_Pin_1), adsReady_1, RISING);
-
-  ADS_1.setMode(0);          // continuous mode
-  ADS_1.readADC(channel_1);  // trigger first read
-
-
-  // SETUP SECOND ADS1115
-  ADS_2.begin();
-  ADS_2.setGain(0);        // 6.144 volt
-  ADS_2.setDataRate(7);
-
-  // SET ALERT RDY PIN
-  ADS_2.setComparatorThresholdHigh(0x8000);
-  ADS_2.setComparatorThresholdLow(0x0000);
-  ADS_2.setComparatorQueConvert(0);
-
-  // SET INTERRUPT HANDLER TO CATCH CONVERSION READY
-  pinMode(RDY_Pin_2, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(RDY_Pin_2), adsReady_2, RISING);
-
-  ADS_2.setMode(0);          // continuous mode
-  ADS_2.readADC(channel_2);  // trigger first read
+  initSerial();
+  initExtAdc();
+  initVoltageRead();
 }
 
 
@@ -315,6 +280,54 @@ void initTimer(void)
   
   TCCR0B|=(1<<CS01);    //Set the prescale 1/64 clock
   TCCR0B|=(1<<CS00);
+}
+
+void initSerial(void)
+{
+  Serial.begin(EXT_BAUD_RATE);
+}
+
+void initExtAdc(void)
+{
+  // SETUP FIRST ADS1115
+  ADS_1.begin();
+  ADS_1.setGain(0);        // 6.144 volt
+  ADS_1.setDataRate(7);
+
+  // SET ALERT RDY PIN
+  ADS_1.setComparatorThresholdHigh(0x8000);
+  ADS_1.setComparatorThresholdLow(0x0000);
+  ADS_1.setComparatorQueConvert(0);
+
+  // SET INTERRUPT HANDLER TO CATCH CONVERSION READY
+  pinMode(RDY_Pin_1, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(RDY_Pin_1), adsReady_1, RISING);
+
+  ADS_1.setMode(0);          // continuous mode
+  ADS_1.readADC(channel_1);  // trigger first read
+
+
+  // SETUP SECOND ADS1115
+  ADS_2.begin();
+  ADS_2.setGain(0);        // 6.144 volt
+  ADS_2.setDataRate(7);
+
+  // SET ALERT RDY PIN
+  ADS_2.setComparatorThresholdHigh(0x8000);
+  ADS_2.setComparatorThresholdLow(0x0000);
+  ADS_2.setComparatorQueConvert(0);
+
+  // SET INTERRUPT HANDLER TO CATCH CONVERSION READY
+  pinMode(RDY_Pin_2, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(RDY_Pin_2), adsReady_2, RISING);
+
+  ADS_2.setMode(0);          // continuous mode
+  ADS_2.readADC(channel_2);  // trigger first read  
+}
+
+void initVoltageRead(void)
+{
+  
 }
 
 void initCmdDet(void)

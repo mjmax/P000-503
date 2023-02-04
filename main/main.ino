@@ -98,11 +98,13 @@ typedef struct
 #define SERIAL_NUMBER     1
 #define EXT_ADC_1_ADD     0x49
 #define EXT_ADC_2_ADD     0x48
+#define CHNL_PER_EXT_ADC  4
 #define EXT_BAUD_RATE     115200
 
 #define PROTOCOL_SEPERATOR ':'
 
 typedef enum {REG_MODE_EXECUTE = 0, REG_MODE_READ, REG_MODE_WRITE, REG_MODE_MAX}regMode_t;
+typedef enum {EXT_ADC_1 = 0, EXT_ADC_2, MAX_ADC_COUNT}extAdc_t;
 
 cmdDet_t cmdDet;
 
@@ -113,15 +115,9 @@ uint16_t time_count = 0;
 uint16_t second_count = 0;
 uint16_t minute_count = 0;
 uint8_t testLEDPin = 13;
-//  two interrupt flags for external ADCs
-volatile bool RDY_1 = false;
-volatile bool RDY_2 = false;
-uint8_t RDY_Pin_1 = 2;        // interrupt pin for device 1
-uint8_t RDY_Pin_2 = 3;        // interrupt pin for device 2
-uint8_t channel_1 = 0;         // channel from device 1(this variable count channels 1 to 4 of 1st external ADC)
-uint8_t channel_2 = 0;         // channel from device 2(this variable count channels 1 to 4 of 2nd external ADC)
-//  array to hold the data.
-int16_t val[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint8_t ExtAdcRedyPin[MAX_ADC_COUNT] = { 2, 3 };  // interrupt pins for device 1 and 2
+bool extAdcStatus[MAX_ADC_COUNT];
+int16_t extAdcVal[MAX_ADC_COUNT*CHNL_PER_EXT_ADC] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 ///..............PROGRAM.............///
 void initTimer(void);
@@ -130,7 +126,14 @@ void initExtAdc(void);
 void initVoltageRead(void);
 void initCmdDet(void);
 void idle(void);
+bool updateExtAdcVal(void);
+void setExtAdcReady(uint8_t adc,bool status_adc);
+uint8_t getExtAdcIntPin(uint8_t pin);
+bool isExtAdcReady(uint8_t adc);
 bool handleConversion(void);
+
+void ext_adc_1_set(void);
+void ext_adc_2_set(void);
 
 ///...............COMMUNICATION...........///
 void commsHandle(void);
@@ -197,8 +200,8 @@ static const cmd_t cmdSet[]=
 
 
 // adjust addresses if needed
-ADS1115 ADS_1(EXT_ADC_1_ADD);
-ADS1115 ADS_2(EXT_ADC_2_ADD);
+ADS1115 extADC_1(EXT_ADC_1_ADD);
+ADS1115 extADC_2(EXT_ADC_2_ADD);
 
 void setup()
 {
@@ -227,47 +230,64 @@ void loop()
  */
 }
 
-
-// catch interrupt and set flag device 1
-void adsReady_1()
+void ext_adc_1_set(void)
 {
-  RDY_1 = true;
+  setExtAdcReady(EXT_ADC_1,true);
 }
 
-// catch interrupt and set flag device 1
-void adsReady_2()
+void ext_adc_2_set(void)
 {
-  RDY_2 = true;
+  setExtAdcReady(EXT_ADC_2,true);
 }
 
-
-// handle conversions that are ready
-bool handleConversion(void)
+bool isExtAdcReady(uint8_t adc)
 {
-  bool rv = false;
-  if (RDY_1)
+  if(adc < MAX_ADC_COUNT)
+    return extAdcStatus[adc];
+  else
+    return false;
+}
+
+uint8_t getExtAdcIntPin(uint8_t pin)
+{
+  return ExtAdcRedyPin[pin]; 
+}
+
+void setExtAdcReady(uint8_t adc,bool status_adc)
+{
+  extAdcStatus[adc] = status_adc;
+}
+
+bool updateExtAdcVal(void)
+{
+  bool update_st = false;
+  static uint8_t ch_1 = 0, ch_2 = 0;
+  if(isExtAdcReady(EXT_ADC_1))
   {
-    // save the last value
-    val[channel_1] = ADS_1.getValue();
-    // request next channel
-    channel_1++;
-    if (channel_1 >= 4) channel_1 = 0;
-    ADS_1.readADC(channel_1);
-    RDY_1 = false;
-    rv = true;
+    extAdcVal[ch_1] = extADC_1.getValue();
+    ch_1++;
+    if (ch_1 >= CHNL_PER_EXT_ADC) 
+    {
+      ch_1 = 0;
+    }
+    extADC_1.readADC(ch_1);
+    setExtAdcReady(EXT_ADC_1,false);
+    update_st = true;
   }
-  if (RDY_2)
+
+  if(isExtAdcReady(EXT_ADC_2))
   {
-    // save the last value
-    val[4 + channel_2] = ADS_2.getValue();
-    // request next channel
-    channel_2++;
-    if (channel_2 >= 4) channel_2 = 0;
-    ADS_2.readADC(channel_2);
-    RDY_2 = false;
-    rv = true;
+    extAdcVal[CHNL_PER_EXT_ADC + ch_2] = extADC_2.getValue();
+    ch_1++;
+    if (ch_2 >= CHNL_PER_EXT_ADC) 
+    {
+      ch_2 = 0;
+    }
+    extADC_2.readADC(ch_2);
+    setExtAdcReady(EXT_ADC_2,false);
+    update_st = true;
   }
-  return rv;
+  return update_st;
 }
 
 void initTimer(void)
@@ -289,40 +309,45 @@ void initSerial(void)
 
 void initExtAdc(void)
 {
+  uint8_t adc; 
   // SETUP FIRST ADS1115
-  ADS_1.begin();
-  ADS_1.setGain(0);        // 6.144 volt
-  ADS_1.setDataRate(7);
+  adc = EXT_ADC_1;
+  extADC_1.begin();
+  extADC_1.setGain(0);        // 6.144 volt
+  extADC_1.setDataRate(7);
 
   // SET ALERT RDY PIN
-  ADS_1.setComparatorThresholdHigh(0x8000);
-  ADS_1.setComparatorThresholdLow(0x0000);
-  ADS_1.setComparatorQueConvert(0);
+  extADC_1.setComparatorThresholdHigh(0x8000);
+  extADC_1.setComparatorThresholdLow(0x0000);
+  extADC_1.setComparatorQueConvert(0);
 
   // SET INTERRUPT HANDLER TO CATCH CONVERSION READY
-  pinMode(RDY_Pin_1, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(RDY_Pin_1), adsReady_1, RISING);
+  setExtAdcReady(adc,false);
+  pinMode(getExtAdcIntPin(adc), INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(getExtAdcIntPin(adc)), ext_adc_1_set, RISING);
 
-  ADS_1.setMode(0);          // continuous mode
-  ADS_1.readADC(channel_1);  // trigger first read
+  extADC_1.setMode(0);          // continuous mode
+  extADC_1.readADC(0);  // trigger first read
 
 
   // SETUP SECOND ADS1115
-  ADS_2.begin();
-  ADS_2.setGain(0);        // 6.144 volt
-  ADS_2.setDataRate(7);
+  adc = EXT_ADC_2;
+  extADC_1.begin();
+  extADC_1.setGain(0);        // 6.144 volt
+  extADC_1.setDataRate(7);
 
   // SET ALERT RDY PIN
-  ADS_2.setComparatorThresholdHigh(0x8000);
-  ADS_2.setComparatorThresholdLow(0x0000);
-  ADS_2.setComparatorQueConvert(0);
+  extADC_1.setComparatorThresholdHigh(0x8000);
+  extADC_1.setComparatorThresholdLow(0x0000);
+  extADC_1.setComparatorQueConvert(0);
 
   // SET INTERRUPT HANDLER TO CATCH CONVERSION READY
-  pinMode(RDY_Pin_2, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(RDY_Pin_2), adsReady_2, RISING);
+  setExtAdcReady(adc,false);
+  pinMode(getExtAdcIntPin(adc), INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(getExtAdcIntPin(adc)), ext_adc_2_set, RISING);
 
-  ADS_2.setMode(0);          // continuous mode
-  ADS_2.readADC(channel_2);  // trigger first read  
+  extADC_1.setMode(0);          // continuous mode
+  extADC_1.readADC(0);  // trigger first read  
 }
 
 void initVoltageRead(void)
@@ -341,7 +366,7 @@ void initCmdDet(void)
 void idle(void)
 {
   //static bool status_pin = true;
-  handleConversion();
+  updateExtAdcVal();
   if(time_count > (MILI_TO_SECOND - 1))
   {
     second_count++;

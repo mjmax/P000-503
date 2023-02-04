@@ -30,31 +30,19 @@ typedef struct
 #define REG_HARDWARE_VER            0x0002
 #define REG_SERIAL_NUMBER           0x0003
 
-#define REG_ZERO_CAL_SEN0           0x0010
-#define REG_ZERO_CAL_SEN1           0x0011
-#define REG_ZERO_CAL_SEN2           0x0012
-#define REG_ZERO_CAL_SEN3           0x0013
-#define REG_CAP_CAL_SEN0            0x0014
-#define REG_CAP_CAL_SEN1            0x0015
-#define REG_CAP_CAL_SEN2            0x0016
-#define REG_CAP_CAL_SEN3            0x0017
-#define REG_SPAN_CAL_SEN0           0x0018
-#define REG_SPAN_CAL_SEN1           0x0019
-#define REG_SPAN_CAL_SEN2           0x001A
-#define REG_SPAN_CAL_SEN3           0x001B
-#define REG_ZERO_LIM                0x001C
+#define REG_INPUT_VOLTAGE           0x0020
+#define REG_OUTPUT_VOLTAGE          0x0021
 
-#define REG_CAP_ALL                 0x0020
-#define REG_ZERO_ALL                0x0021
-#define REG_SPAN_ALL                0x0022
-
-
-#define REG_READ_MINUTE_DATA        0x0030
-#define REG_READ_SAMPLE_DATA        0x0031
-#define REG_ALL_ADC_VALUE           0x0032
-#define REG_GET_FINAL_VALUE         0x0033
-#define REG_GET_FINAL_ALL           0x0034
-#define REG_GET_PREV_LUX_SAMPLE     0x0035
+#define REG_ALL_ADC_VALUE           0x0030
+#define REG_CH1_ADC_VALUE           0x0031
+#define REG_CH2_ADC_VALUE           0x0032
+#define REG_CH3_ADC_VALUE           0x0033
+#define REG_CH4_ADC_VALUE           0x0034
+#define REG_CH5_ADC_VALUE           0x0035
+#define REG_CH6_ADC_VALUE           0x0036
+#define REG_CH7_ADC_VALUE           0x0037
+#define REG_CH8_ADC_VALUE           0x0038
+#define REG_CH1_TO_CH6_ADC_VALUE    0x003A
 
 #define REG_END                     0xFFFF
 
@@ -105,6 +93,7 @@ typedef struct
 
 typedef enum {REG_MODE_EXECUTE = 0, REG_MODE_READ, REG_MODE_WRITE, REG_MODE_MAX}regMode_t;
 typedef enum {EXT_ADC_1 = 0, EXT_ADC_2, MAX_ADC_COUNT}extAdc_t;
+typedef enum {EXT_ADC_CH1 = 0, EXT_ADC_CH2, EXT_ADC_CH3, EXT_ADC_CH4, EXT_ADC_CH5, EXT_ADC_CH6, EXT_ADC_CH7, EXT_ADC_CH8, MAX_ADC_CHANNELS}extAdcChannels_t;
 
 cmdDet_t cmdDet;
 
@@ -128,6 +117,8 @@ void initCmdDet(void);
 void idle(void);
 bool updateExtAdcVal(void);
 void setExtAdcReady(uint8_t adc,bool status_adc);
+int16_t getExtAdcValue(uint8_t channel);
+void setExtAdcValue(uint8_t channel,int16_t value);
 uint8_t getExtAdcIntPin(uint8_t pin);
 bool isExtAdcReady(uint8_t adc);
 bool handleConversion(void);
@@ -153,10 +144,23 @@ void MakeHeader(char *message);
 long hex_to_long(char *string, unsigned short width);
 void substr(char *str, uint8_t str_val, uint8_t end_val, char *ans);
 
+
 char SoftwareVersion(uint8_t mode, char *str);
 char HardwareVersion(uint8_t mode, char *str);
 char SerialNumber(uint8_t mode, char *str);
+
 char SampleFunction(uint8_t mode, char *str);
+char AllExtAdcValue(uint8_t mode, char *str);
+char Ch1ExtAdcValue(uint8_t mode, char *str);
+char Ch2ExtAdcValue(uint8_t mode, char *str);
+char Ch3ExtAdcValue(uint8_t mode, char *str);
+char Ch4ExtAdcValue(uint8_t mode, char *str);
+char Ch5ExtAdcValue(uint8_t mode, char *str);
+char Ch6ExtAdcValue(uint8_t mode, char *str);
+char Ch7ExtAdcValue(uint8_t mode, char *str);
+char Ch8ExtAdcValue(uint8_t mode, char *str);
+char Ch1ToCh6ExtAdcValue(uint8_t mode, char *str);
+
 char NullTest(uint8_t mode, char *str);
 
 static const cmd_t cmdSet[]=
@@ -165,34 +169,19 @@ static const cmd_t cmdSet[]=
   {REG_HARDWARE_VER,                    RR__,   HardwareVersion},
   {REG_SERIAL_NUMBER,                   RR__,   SerialNumber},
 
-  {REG_ZERO_CAL_SEN0,                   RR_E,   SampleFunction},
-  {REG_ZERO_CAL_SEN1,                   RR_E,   SampleFunction},
-  {REG_ZERO_CAL_SEN2,                   RR_E,   SampleFunction},
-  {REG_ZERO_CAL_SEN3,                   RR_E,   SampleFunction},
+  {REG_INPUT_VOLTAGE,                   RR__,   SampleFunction},
+  {REG_OUTPUT_VOLTAGE,                  RR__,   SampleFunction},
   
-  {REG_CAP_CAL_SEN0,                    RRW_,   SampleFunction},
-  {REG_CAP_CAL_SEN1,                    RRW_,   SampleFunction},
-  {REG_CAP_CAL_SEN2,                    RRW_,   SampleFunction},
-  {REG_CAP_CAL_SEN3,                    RRW_,   SampleFunction},
-
-  {REG_CAP_ALL,                         RR__,   SampleFunction},
-  {REG_ZERO_ALL,                        RR__,   SampleFunction},
-  {REG_SPAN_ALL,                        RR__,   SampleFunction},
- 
-  
-  {REG_SPAN_CAL_SEN0,                   RR_E,   SampleFunction},
-  {REG_SPAN_CAL_SEN1,                   RR_E,   SampleFunction},
-  {REG_SPAN_CAL_SEN2,                   RR_E,   SampleFunction},
-  {REG_SPAN_CAL_SEN3,                   RR_E,   SampleFunction},
-  
-  {REG_ZERO_LIM,                        RRW_,   SampleFunction},
-  
-  {REG_READ_MINUTE_DATA,                RR__,   SampleFunction},
-  {REG_READ_SAMPLE_DATA,                RR__,   SampleFunction},
-  {REG_ALL_ADC_VALUE,                   RR__,   SampleFunction},
-  {REG_GET_FINAL_VALUE,                 RR__,   SampleFunction},
-  {REG_GET_FINAL_ALL,                   RR__,   SampleFunction},
-  {REG_GET_PREV_LUX_SAMPLE,             RR__,   SampleFunction},
+  {REG_ALL_ADC_VALUE,                   RR__,   AllExtAdcValue},
+  {REG_CH1_ADC_VALUE,                   RR__,   Ch1ExtAdcValue},
+  {REG_CH2_ADC_VALUE,                   RR__,   Ch2ExtAdcValue},
+  {REG_CH3_ADC_VALUE,                   RR__,   Ch3ExtAdcValue},
+  {REG_CH4_ADC_VALUE,                   RR__,   Ch4ExtAdcValue},
+  {REG_CH5_ADC_VALUE,                   RR__,   Ch5ExtAdcValue},
+  {REG_CH6_ADC_VALUE,                   RR__,   Ch6ExtAdcValue},
+  {REG_CH7_ADC_VALUE,                   RR__,   Ch7ExtAdcValue},
+  {REG_CH8_ADC_VALUE,                   RR__,   Ch8ExtAdcValue},
+  {REG_CH1_TO_CH6_ADC_VALUE,            RR__,   Ch1ToCh6ExtAdcValue},
   
 
   {REG_END,                             RRWE,   NullTest}
@@ -258,13 +247,24 @@ void setExtAdcReady(uint8_t adc,bool status_adc)
   extAdcStatus[adc] = status_adc;
 }
 
+void setExtAdcValue(uint8_t channel,int16_t value)
+{
+  extAdcVal[channel] = value;
+}
+
+int16_t getExtAdcValue(uint8_t channel)
+{
+  return extAdcVal[channel];
+}
+
 bool updateExtAdcVal(void)
 {
   bool update_st = false;
   static uint8_t ch_1 = 0, ch_2 = 0;
   if(isExtAdcReady(EXT_ADC_1))
   {
-    extAdcVal[ch_1] = extADC_1.getValue();
+    setExtAdcValue(ch_1,extADC_1.getValue());
+    //extAdcVal[ch_1] = extADC_1.getValue();
     ch_1++;
     if (ch_1 >= CHNL_PER_EXT_ADC) 
     {
@@ -277,7 +277,8 @@ bool updateExtAdcVal(void)
 
   if(isExtAdcReady(EXT_ADC_2))
   {
-    extAdcVal[CHNL_PER_EXT_ADC + ch_2] = extADC_2.getValue();
+    setExtAdcValue(CHNL_PER_EXT_ADC + ch_2,extADC_2.getValue());
+    //extAdcVal[CHNL_PER_EXT_ADC + ch_2] = extADC_2.getValue();
     ch_1++;
     if (ch_2 >= CHNL_PER_EXT_ADC) 
     {
@@ -772,6 +773,199 @@ char SampleFunction(uint8_t mode, char *str)
     break;
   case REG_MODE_READ:
     sprintf(tempRegRes, "%d,%d,%d,%d;", 1, 2, 3, 4);
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    // noting to write
+    break;
+  }
+  return status;
+}
+
+char Ch1ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getExtAdcValue(EXT_ADC_CH1));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char Ch2ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getExtAdcValue(EXT_ADC_CH2));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char Ch3ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getExtAdcValue(EXT_ADC_CH3));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char Ch4ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getExtAdcValue(EXT_ADC_CH4));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char Ch5ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getExtAdcValue(EXT_ADC_CH5));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char Ch6ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getExtAdcValue(EXT_ADC_CH6));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char Ch7ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getExtAdcValue(EXT_ADC_CH7));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char Ch8ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getExtAdcValue(EXT_ADC_CH8));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char Ch1ToCh6ExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    // nothing to Exicute
+    //status = 23;
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X,%04X,%04X,%04X,%04X,%04X;", getExtAdcValue(EXT_ADC_CH1),getExtAdcValue(EXT_ADC_CH2),
+                                                          getExtAdcValue(EXT_ADC_CH3),getExtAdcValue(EXT_ADC_CH4),
+                                                          getExtAdcValue(EXT_ADC_CH5),getExtAdcValue(EXT_ADC_CH6));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    // noting to write
+    break;
+  }
+  return status;
+}
+
+char AllExtAdcValue(uint8_t mode, char *str)
+{
+  char status = 0; 
+
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    // nothing to Exicute
+    //status = 23;
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X,%04X,%04X,%04X,%04X,%04X,%04X,%04X;", getExtAdcValue(EXT_ADC_CH1),getExtAdcValue(EXT_ADC_CH2),
+                                                                    getExtAdcValue(EXT_ADC_CH3),getExtAdcValue(EXT_ADC_CH4),
+                                                                    getExtAdcValue(EXT_ADC_CH5),getExtAdcValue(EXT_ADC_CH6),
+                                                                    getExtAdcValue(EXT_ADC_CH7),getExtAdcValue(EXT_ADC_CH8));
     status = 19;
     break;
   case REG_MODE_WRITE:

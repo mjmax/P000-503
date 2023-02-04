@@ -94,6 +94,7 @@ typedef struct
 typedef enum {REG_MODE_EXECUTE = 0, REG_MODE_READ, REG_MODE_WRITE, REG_MODE_MAX}regMode_t;
 typedef enum {EXT_ADC_1 = 0, EXT_ADC_2, MAX_ADC_COUNT}extAdc_t;
 typedef enum {EXT_ADC_CH1 = 0, EXT_ADC_CH2, EXT_ADC_CH3, EXT_ADC_CH4, EXT_ADC_CH5, EXT_ADC_CH6, EXT_ADC_CH7, EXT_ADC_CH8, MAX_ADC_CHANNELS}extAdcChannels_t;
+typedef enum {INPUT_VOLTAGE = 0, OUTPUT_VOLTAGE, MAX_VOLTAGE}measuringVolt_t;
 
 cmdDet_t cmdDet;
 
@@ -105,6 +106,7 @@ uint16_t second_count = 0;
 uint16_t minute_count = 0;
 uint8_t testLEDPin = 13;
 uint8_t ExtAdcRedyPin[MAX_ADC_COUNT] = { 2, 3 };  // interrupt pins for device 1 and 2
+uint8_t measuringPin[MAX_VOLTAGE] = {A0, A1}; // analog pins fro measure input and output voltges
 bool extAdcStatus[MAX_ADC_COUNT];
 int16_t extAdcVal[MAX_ADC_COUNT*CHNL_PER_EXT_ADC] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -120,6 +122,7 @@ void setExtAdcReady(uint8_t adc,bool status_adc);
 int16_t getExtAdcValue(uint8_t channel);
 void setExtAdcValue(uint8_t channel,int16_t value);
 uint8_t getExtAdcIntPin(uint8_t pin);
+uint16_t getVoltage(uint8_t channel);
 bool isExtAdcReady(uint8_t adc);
 bool handleConversion(void);
 
@@ -150,6 +153,8 @@ char HardwareVersion(uint8_t mode, char *str);
 char SerialNumber(uint8_t mode, char *str);
 
 char SampleFunction(uint8_t mode, char *str);
+char InpuVoltage(uint8_t mode, char *str);
+char OutputVoltage(uint8_t mode, char *str);
 char AllExtAdcValue(uint8_t mode, char *str);
 char Ch1ExtAdcValue(uint8_t mode, char *str);
 char Ch2ExtAdcValue(uint8_t mode, char *str);
@@ -169,8 +174,8 @@ static const cmd_t cmdSet[]=
   {REG_HARDWARE_VER,                    RR__,   HardwareVersion},
   {REG_SERIAL_NUMBER,                   RR__,   SerialNumber},
 
-  {REG_INPUT_VOLTAGE,                   RR__,   SampleFunction},
-  {REG_OUTPUT_VOLTAGE,                  RR__,   SampleFunction},
+  {REG_INPUT_VOLTAGE,                   RR__,   InpuVoltage},
+  {REG_OUTPUT_VOLTAGE,                  RR__,   OutputVoltage},
   
   {REG_ALL_ADC_VALUE,                   RR__,   AllExtAdcValue},
   {REG_CH1_ADC_VALUE,                   RR__,   Ch1ExtAdcValue},
@@ -351,9 +356,23 @@ void initExtAdc(void)
   extADC_1.readADC(0);  // trigger first read  
 }
 
+uint16_t getVoltage(uint8_t channel)
+{
+  switch (channel)
+  {
+    case INPUT_VOLTAGE:
+      return (uint16_t)analogRead(measuringPin[INPUT_VOLTAGE]);
+      break;
+    case OUTPUT_VOLTAGE:
+      return (uint16_t)analogRead(measuringPin[OUTPUT_VOLTAGE]);
+      break;
+  }
+}
+
 void initVoltageRead(void)
 {
-  
+  pinMode(measuringPin[INPUT_VOLTAGE],INPUT);
+  pinMode(measuringPin[OUTPUT_VOLTAGE],INPUT);
 }
 
 void initCmdDet(void)
@@ -777,6 +796,42 @@ char SampleFunction(uint8_t mode, char *str)
     break;
   case REG_MODE_WRITE:
     // noting to write
+    break;
+  }
+  return status;
+}
+
+char InpuVoltage(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getVoltage(INPUT_VOLTAGE));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
+    break;
+  }
+  return status;
+}
+
+char OutputVoltage(uint8_t mode, char *str)
+{
+  char status = 0; 
+  memset(tempRegRes, '\0', arrLen(tempRegRes));
+  switch (mode)
+  {
+  case REG_MODE_EXECUTE:
+    break;
+  case REG_MODE_READ:
+    sprintf(tempRegRes, "%04X;", getVoltage(OUTPUT_VOLTAGE));
+    status = 19;
+    break;
+  case REG_MODE_WRITE:
     break;
   }
   return status;

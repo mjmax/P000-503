@@ -441,7 +441,8 @@ void commsHandle(void)
     if(checkForEnd(incomingByte))
     {
       msgAvailable = true;
-      Serial.flush();
+      break;
+      //Serial.flush();
     }
         
     if (buffer_count > (BUFFER_SIZE - 1))

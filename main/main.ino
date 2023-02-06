@@ -88,6 +88,9 @@ typedef struct
 #define EXT_ADC_2_ADD     0x48
 #define CHNL_PER_EXT_ADC  4
 #define EXT_BAUD_RATE     115200
+#define MAX_INPUT_VOLT    36
+#define MAX_OUTPUT_VOLT   5
+#define MAP_VOLTAGE       4
 
 #define PROTOCOL_SEPERATOR ':'
 
@@ -122,7 +125,8 @@ void setExtAdcReady(uint8_t adc,bool status_adc);
 int16_t getExtAdcValue(uint8_t channel);
 void setExtAdcValue(uint8_t channel,int16_t value);
 uint8_t getExtAdcIntPin(uint8_t pin);
-uint16_t getVoltage(uint8_t channel);
+float convertVoltage(uint8_t channel);
+float getVoltage(uint8_t channel);
 bool isExtAdcReady(uint8_t adc);
 bool handleConversion(void);
 
@@ -356,17 +360,27 @@ void initExtAdc(void)
   extADC_1.readADC(0);  // trigger first read  
 }
 
-uint16_t getVoltage(uint8_t channel)
+float convertVoltage(uint8_t channel)
 {
+  uint16_t digitalVal; 
+  float analogVal;
   switch (channel)
   {
     case INPUT_VOLTAGE:
-      return (uint16_t)analogRead(measuringPin[INPUT_VOLTAGE]);
+      digitalVal = (uint16_t)analogRead(measuringPin[INPUT_VOLTAGE]);
+      analogVal = (float)digitalVal*MAX_OUTPUT_VOLT/(float)((MAX_ADC_VALUE/MAX_OUTPUT_VOLT)*MAP_VOLTAGE);
       break;
     case OUTPUT_VOLTAGE:
-      return (uint16_t)analogRead(measuringPin[OUTPUT_VOLTAGE]);
+      digitalVal = (uint16_t)analogRead(measuringPin[OUTPUT_VOLTAGE]);
+      analogVal = (float)digitalVal*MAX_INPUT_VOLT/(float)((MAX_ADC_VALUE/MAX_OUTPUT_VOLT)*MAP_VOLTAGE);
       break;
-  }
+  } 
+  return analogVal; 
+}
+
+float getVoltage(uint8_t channel)
+{
+  return convertVoltage(channel);
 }
 
 void initVoltageRead(void)
@@ -804,13 +818,15 @@ char SampleFunction(uint8_t mode, char *str)
 char InpuVoltage(uint8_t mode, char *str)
 {
   char status = 0; 
+  char str_temp[6];
   memset(tempRegRes, '\0', arrLen(tempRegRes));
   switch (mode)
   {
   case REG_MODE_EXECUTE:
     break;
   case REG_MODE_READ:
-    sprintf(tempRegRes, "%04X;", getVoltage(INPUT_VOLTAGE));
+    dtostrf(getVoltage(INPUT_VOLTAGE), 4, 2, str_temp);
+    sprintf(tempRegRes, "%sV;", str_temp);
     status = 19;
     break;
   case REG_MODE_WRITE:
@@ -821,14 +837,16 @@ char InpuVoltage(uint8_t mode, char *str)
 
 char OutputVoltage(uint8_t mode, char *str)
 {
-  char status = 0; 
+  char status = 0;
+  char str_temp[6];
   memset(tempRegRes, '\0', arrLen(tempRegRes));
   switch (mode)
   {
   case REG_MODE_EXECUTE:
     break;
   case REG_MODE_READ:
-    sprintf(tempRegRes, "%04X;", getVoltage(OUTPUT_VOLTAGE));
+    dtostrf(getVoltage(OUTPUT_VOLTAGE), 4, 2, str_temp);
+    sprintf(tempRegRes, "%sV;", str_temp);
     status = 19;
     break;
   case REG_MODE_WRITE:

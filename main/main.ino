@@ -90,7 +90,12 @@ typedef struct
 #define EXT_BAUD_RATE     115200
 #define MAX_INPUT_VOLT    36
 #define MAX_OUTPUT_VOLT   5
-#define MAP_VOLTAGE       4
+#define MAX_INT_ADC_VOLT  5
+#define RES_INP_MAP_L     18000
+#define RES_INP_MAP_S     2000
+#define RES_OUT_MAP_L     10000
+#define RES_OUT_MAP_S     8200
+
 
 #define PROTOCOL_SEPERATOR ':'
 
@@ -368,13 +373,13 @@ float convertVoltage(uint8_t channel)
   {
     case INPUT_VOLTAGE:
       digitalVal = (uint16_t)analogRead(measuringPin[INPUT_VOLTAGE]);
-      analogVal = (float)digitalVal*MAX_OUTPUT_VOLT/(float)((MAX_ADC_VALUE/MAX_OUTPUT_VOLT)*MAP_VOLTAGE);
+      analogVal = ((float)digitalVal/MAX_ADC_VALUE)*((float)RES_INP_MAP_L/RES_INP_MAP_S)*MAX_INT_ADC_VOLT;
       break;
     case OUTPUT_VOLTAGE:
       digitalVal = (uint16_t)analogRead(measuringPin[OUTPUT_VOLTAGE]);
-      analogVal = (float)digitalVal*MAX_INPUT_VOLT/(float)((MAX_ADC_VALUE/MAX_OUTPUT_VOLT)*MAP_VOLTAGE);
+      analogVal = ((float)digitalVal/MAX_ADC_VALUE)*((float)RES_OUT_MAP_L/RES_OUT_MAP_S)*MAX_INT_ADC_VOLT;
       break;
-  } 
+  }
   return analogVal; 
 }
 

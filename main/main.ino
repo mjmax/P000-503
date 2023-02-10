@@ -209,7 +209,7 @@ ADS1115 extADC_2(EXT_ADC_2_ADD);
 void setup()
 {
   pinMode(testLEDPin,OUTPUT);
-  //initTimer();
+  initTimer();
   initSerial();
   initExtAdc();
   initVoltageRead();
@@ -219,9 +219,9 @@ void setup()
 void loop()
 {
   idle();
-//  commsHandle();
+  commsHandle();
 
-
+/*
   for (int i = 0; i < 8; i++)
   {
     Serial.print(extAdcVal[i]);
@@ -230,7 +230,7 @@ void loop()
   }
   Serial.println();
   delay(100);
-
+*/
 }
 
 void ext_adc_1_set(void)
@@ -304,15 +304,31 @@ bool updateExtAdcVal(void)
 
 void initTimer(void)
 {
+  //timer 0 interrupt
+  /*
   cli();//stop interrupts
   TCCR0A=(1<<WGM01);    //Set the CTC mode   
-  OCR0A=0xF9; //Value for ORC0A for 1ms 
+  OCR0A=0xF9; //Value for ORC0A for 1ms  
   
-  TIMSK0|=(1<<OCIE0A);   //Set the interrupt request
+  TIMSK0|=(1<<OCIE1A);   //Set the interrupt request
   
   TCCR0B|=(1<<CS01);    //Set the prescale 1/64 clock
   TCCR0B|=(1<<CS00);
 
+  sei(); //Enable interrupt
+  */
+  //timer 1 interrupt
+  cli();//stop interrupts
+  TCCR1A = 0;// set entire TCCR1A register to 0
+  TCCR1B = 0;// same for TCCR1B
+  TCNT1  = 0;//initialize counter value to 0
+  OCR1A = 0xF9;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+  // turn on CTC mode
+  TCCR1B |= (1 << WGM12);
+  // Set CS01 and CS00 bits for 64 prescaler
+  TCCR1B |= (1 << CS01) | (1 << CS00);  
+  // enable timer compare interrupt
+  TIMSK1 |= (1 << OCIE1A);
   sei(); //Enable interrupt
 }
 
@@ -404,7 +420,7 @@ void initCmdDet(void)
 void idle(void)
 {
   static bool status_pin = true;
-  updateExtAdcVal();
+  //updateExtAdcVal();
   if(time_count > (MILI_TO_SECOND - 1))
   {
     second_count++;
@@ -1137,7 +1153,12 @@ char NullTest(uint8_t mode, char *str)
 /*
 ISR(TIMER0_COMPA_vect)
 {
-  initTimer();
+  //initTimer();
+  time_count++; 
+}*/
+
+ISR(TIMER1_COMPA_vect)
+{
+  //initTimer();
   time_count++; 
 }
-*/

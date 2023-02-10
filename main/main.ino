@@ -82,7 +82,7 @@ typedef struct
 #define SOFT_VER_MAIN     0
 #define SOFT_VER_SUB      1
 #define HARD_VER_MAIN     0
-#define HARD_VER_SUB      1
+#define HARD_VER_SUB      2
 #define SERIAL_NUMBER     1
 #define EXT_ADC_1_ADD     0x49
 #define EXT_ADC_2_ADD     0x48
@@ -115,7 +115,7 @@ uint16_t minute_count = 0;
 uint8_t testLEDPin = 13;
 uint8_t ExtAdcRedyPin[MAX_ADC_COUNT] = { 2, 3 };  // interrupt pins for device 1 and 2
 uint8_t measuringPin[MAX_VOLTAGE] = {A0, A1}; // analog pins fro measure input and output voltges
-bool extAdcStatus[MAX_ADC_COUNT];
+bool extAdcStatus[MAX_ADC_COUNT] = { false, false };
 int16_t extAdcVal[MAX_ADC_COUNT*CHNL_PER_EXT_ADC] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 ///..............PROGRAM.............///
@@ -209,7 +209,7 @@ ADS1115 extADC_2(EXT_ADC_2_ADD);
 void setup()
 {
   pinMode(testLEDPin,OUTPUT);
-  initTimer();
+  //initTimer();
   initSerial();
   initExtAdc();
   initVoltageRead();
@@ -219,18 +219,18 @@ void setup()
 void loop()
 {
   idle();
-  commsHandle();
+//  commsHandle();
 
-/*
+
   for (int i = 0; i < 8; i++)
   {
-    Serial.print(val[i]);
+    Serial.print(extAdcVal[i]);
     Serial.print('\t');
-    handleConversion();
+    updateExtAdcVal();
   }
   Serial.println();
   delay(100);
- */
+
 }
 
 void ext_adc_1_set(void)
@@ -245,10 +245,7 @@ void ext_adc_2_set(void)
 
 bool isExtAdcReady(uint8_t adc)
 {
-  if(adc < MAX_ADC_COUNT)
-    return extAdcStatus[adc];
-  else
-    return false;
+  return extAdcStatus[adc];
 }
 
 uint8_t getExtAdcIntPin(uint8_t pin)
@@ -293,7 +290,7 @@ bool updateExtAdcVal(void)
   {
     setExtAdcValue(CHNL_PER_EXT_ADC + ch_2,extADC_2.getValue());
     //extAdcVal[CHNL_PER_EXT_ADC + ch_2] = extADC_2.getValue();
-    ch_1++;
+    ch_2++;
     if (ch_2 >= CHNL_PER_EXT_ADC) 
     {
       ch_2 = 0;
@@ -307,14 +304,16 @@ bool updateExtAdcVal(void)
 
 void initTimer(void)
 {
+  cli();//stop interrupts
   TCCR0A=(1<<WGM01);    //Set the CTC mode   
   OCR0A=0xF9; //Value for ORC0A for 1ms 
   
   TIMSK0|=(1<<OCIE0A);   //Set the interrupt request
-  sei(); //Enable interrupt
   
   TCCR0B|=(1<<CS01);    //Set the prescale 1/64 clock
   TCCR0B|=(1<<CS00);
+
+  sei(); //Enable interrupt
 }
 
 void initSerial(void)
@@ -347,22 +346,22 @@ void initExtAdc(void)
 
   // SETUP SECOND ADS1115
   adc = EXT_ADC_2;
-  extADC_1.begin();
-  extADC_1.setGain(0);        // 6.144 volt
-  extADC_1.setDataRate(7);
+  extADC_2.begin();
+  extADC_2.setGain(0);        // 6.144 volt
+  extADC_2.setDataRate(7);
 
   // SET ALERT RDY PIN
-  extADC_1.setComparatorThresholdHigh(0x8000);
-  extADC_1.setComparatorThresholdLow(0x0000);
-  extADC_1.setComparatorQueConvert(0);
+  extADC_2.setComparatorThresholdHigh(0x8000);
+  extADC_2.setComparatorThresholdLow(0x0000);
+  extADC_2.setComparatorQueConvert(0);
 
   // SET INTERRUPT HANDLER TO CATCH CONVERSION READY
   setExtAdcReady(adc,false);
   pinMode(getExtAdcIntPin(adc), INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(getExtAdcIntPin(adc)), ext_adc_2_set, RISING);
 
-  extADC_1.setMode(0);          // continuous mode
-  extADC_1.readADC(0);  // trigger first read  
+  extADC_2.setMode(0);          // continuous mode
+  extADC_2.readADC(0);  // trigger first read  
 }
 
 float convertVoltage(uint8_t channel)
@@ -404,17 +403,27 @@ void initCmdDet(void)
 
 void idle(void)
 {
-  //static bool status_pin = true;
+  static bool status_pin = true;
   updateExtAdcVal();
   if(time_count > (MILI_TO_SECOND - 1))
   {
     second_count++;
     time_count = 0;
-//    if(status_pin)
-//      digitalWrite(testLEDPin,HIGH);
-//     else
-//      digitalWrite(testLEDPin,LOW);
-//    status_pin = !status_pin;
+    /*
+    for (int i = 0; i < 8; i++)
+    {
+      Serial.print(extAdcVal[i]);
+      Serial.print('\t');
+      updateExtAdcVal();
+    }
+    Serial.println();
+  //delay(100);
+  */
+    if(status_pin)
+      digitalWrite(testLEDPin,HIGH);
+     else
+      digitalWrite(testLEDPin,LOW);
+    status_pin = !status_pin;
   }
   
   if(second_count > (SECOND_TO_MINUTE - 1))
@@ -1125,9 +1134,10 @@ char NullTest(uint8_t mode, char *str)
   return (char)20;
 }
 
+/*
 ISR(TIMER0_COMPA_vect)
 {
   initTimer();
-  time_count++;
-  
+  time_count++; 
 }
+*/

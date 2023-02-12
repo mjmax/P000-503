@@ -420,7 +420,7 @@ void initCmdDet(void)
 void idle(void)
 {
   static bool status_pin = true;
-  //updateExtAdcVal();
+  updateExtAdcVal();
   if(time_count > (MILI_TO_SECOND - 1))
   {
     second_count++;

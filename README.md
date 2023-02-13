@@ -9,17 +9,15 @@ Analog to digital converter is used to convert the analog Gauss sensor values to
 
 # Product
 <p align="center">
-      <img src="assets/prd_3d.PNG" align="left" width="58.4%">
-      <img src="assets/prd_1.jpg" align="right" width="41.6%">
+      <img src="assets/prd_3d.PNG" align="left" width="56%">
+      <img src="assets/prd_1.jpg" align="right" width="40%">
 </p>
 
 <p align="center">
-      <img src="assets/prd_4.jpg" align="left" width="41.9%">
-      <img src="assets/prd_3.jpg" align="right" width="58%">
+      <img src="assets/prd_4.jpg" align="left" width="39%">
+      <img src="assets/prd_3.jpg" align="right" width="56%">
 </p>
 
-```
-```
 
 # Communication Protocol
  USB port of the Arduino nano board is utilized to communicate with the PC via serial communication. Simple protocol is built for robust communication.

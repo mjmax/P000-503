@@ -260,7 +260,7 @@ void setExtAdcReady(uint8_t adc,bool status_adc)
 
 void setExtAdcValue(uint8_t channel,int16_t value)
 {
-  extAdcVal[channel] = value;
+  extAdcVal[MAX_ADC_CHANNELS - channel - 1] = value;
 }
 
 int16_t getExtAdcValue(uint8_t channel)

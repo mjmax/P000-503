@@ -17,7 +17,6 @@
 //          
 
 //
-//#include "ADS1X15.h"
 #include <stdio.h>
 #include <string.h>
 //#include <EEPROM.h>
@@ -939,8 +938,8 @@ typedef struct
 #define BASE_DECIMAL      10
 #define GRADF_TO_GRAD     100000
 #define MAX_SAMPLES       144
-#define SOFT_VER_MAIN     0
-#define SOFT_VER_SUB      1
+#define SOFT_VER_MAIN     1
+#define SOFT_VER_SUB      0
 #define HARD_VER_MAIN     0
 #define HARD_VER_SUB      2
 #define SERIAL_NUMBER     1
@@ -954,7 +953,7 @@ typedef struct
 #define RES_INP_MAP_L     18000
 #define RES_INP_MAP_S     2000
 #define RES_OUT_MAP_L     10000
-#define RES_OUT_MAP_S     8200
+#define RES_OUT_MAP_S     2500
 
 
 #define PROTOCOL_SEPERATOR ':'
@@ -1248,11 +1247,11 @@ float convertVoltage(uint8_t channel)
   {
     case INPUT_VOLTAGE:
       digitalVal = (uint16_t)analogRead(measuringPin[INPUT_VOLTAGE]);
-      analogVal = ((float)digitalVal/MAX_ADC_VALUE)*((float)RES_INP_MAP_L/RES_INP_MAP_S)*MAX_INT_ADC_VOLT;
+      analogVal = ((float)digitalVal/MAX_ADC_VALUE)*((float)(RES_INP_MAP_S + RES_INP_MAP_L)/RES_INP_MAP_S)*MAX_INT_ADC_VOLT;
       break;
     case OUTPUT_VOLTAGE:
       digitalVal = (uint16_t)analogRead(measuringPin[OUTPUT_VOLTAGE]);
-      analogVal = ((float)digitalVal/MAX_ADC_VALUE)*((float)RES_OUT_MAP_L/RES_OUT_MAP_S)*MAX_INT_ADC_VOLT;
+      analogVal = ((float)digitalVal/MAX_ADC_VALUE)*((float)(RES_OUT_MAP_S + RES_OUT_MAP_L)/RES_OUT_MAP_L)*MAX_INT_ADC_VOLT;
       break;
   }
   return analogVal; 

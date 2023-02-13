@@ -950,10 +950,12 @@ typedef struct
 #define MAX_INPUT_VOLT    36
 #define MAX_OUTPUT_VOLT   5
 #define MAX_INT_ADC_VOLT  5
-#define RES_INP_MAP_L     18000
+#define RES_INP_TOLL      500
+#define RES_INP_MAP_L     18000 - RES_INP_TOLL
 #define RES_INP_MAP_S     2000
+#define RES_OUT_TOLL      610
 #define RES_OUT_MAP_L     10000
-#define RES_OUT_MAP_S     2500
+#define RES_OUT_MAP_S     2500 - RES_OUT_TOLL
 
 
 #define PROTOCOL_SEPERATOR ':'

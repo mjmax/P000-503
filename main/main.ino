@@ -1666,7 +1666,7 @@ bool isMsgValid(char *msg)
   bool msgValid = false;
   
   cp = strchr(msg,PROTOCOL_SEPERATOR);
-  msgValid = ((cp != NULL) && ((cp - message) > (MIN_CMD_LENGTH - 2)))? true : false;
+  msgValid = ((cp != NULL) && ((cp - msg) > (MIN_CMD_LENGTH - 2)))? true : false;
     
   return msgValid;
 }

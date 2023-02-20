@@ -1322,29 +1322,31 @@ void idle(void)
 void commsHandle(void)
 {
   char incomingByte;
+  static char incommingString[25];
+  static uint8_t serial_count = 0;
+  static uint8_t msg_count = 0; 
   bool msgAvailable = false;
   
   while (Serial.available() > 0)
   {
-    incomingByte = Serial.read();
-    message[buffer_count++] = incomingByte;
-
-    if(checkForEnd(incomingByte))
+    incomingByte = (char)Serial.read();
+    incommingString[serial_count++] = incomingByte;
+    msgAvailable = checkForEnd(incomingByte);
+    
+    if (msgAvailable)
     {
-      msgAvailable = true;
-      //break;
-      Serial.flush();
+     commandHandle(incommingString);
+     memset(incommingString, '\0', arrLen(incommingString));
+     memset(message, '\0', BUFFER_SIZE);
+     serial_count = 0;
+     msgAvailable = false;
     }
-        
-    if (buffer_count > (BUFFER_SIZE - 1))
+
+    if (serial_count > (arrLen(incommingString)- 1))
+    {
+      serial_count = 0;
       break;
-  }
-  
-  if (msgAvailable)
-  {
-   commandHandle(message);
-   memset(message, '\0', BUFFER_SIZE);
-   buffer_count = 0;
+    }
   }
 }
 

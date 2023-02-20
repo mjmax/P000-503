@@ -929,6 +929,8 @@ typedef struct
 #define R__E  (REG_EXECUTABLE)
 
 #define BUFFER_SIZE       256
+#define MAX_REPLY_LEN     35
+#define MAX_HEADER_LEN    15
 #define MILI_TO_SECOND    1000
 #define SECOND_TO_MINUTE  60
 #define SAMPLE_RATE       10
@@ -967,8 +969,7 @@ typedef enum {INPUT_VOLTAGE = 0, OUTPUT_VOLTAGE, MAX_VOLTAGE}measuringVolt_t;
 
 cmdDet_t cmdDet;
 
-char message[BUFFER_SIZE];
-char tempRegRes[35];
+char tempRegRes[MAX_REPLY_LEN];
 uint8_t buffer_count = 0;
 uint16_t time_count = 0;
 uint16_t second_count = 0;
@@ -1013,7 +1014,7 @@ void ProccessCmd(void);
 void ExicuteRinCmd(void);
 void WriteRinRegister(void);
 void ReplyRinCmd(void);
-void MakeHeader(char *message);
+void MakeHeader(char *hdr);
 long hex_to_long(char *string, unsigned short width);
 void substr(char *str, uint8_t str_val, uint8_t end_val, char *ans);
 
@@ -1337,7 +1338,6 @@ void commsHandle(void)
     {
      commandHandle(incommingString);
      memset(incommingString, '\0', arrLen(incommingString));
-     memset(message, '\0', BUFFER_SIZE);
      serial_count = 0;
      msgAvailable = false;
     }
@@ -1570,19 +1570,18 @@ long hex_to_long(char *string, unsigned short width)
    return strtol(szTemp, NULL, 0x10);
 }
 
-void MakeHeader(char *message)
+void MakeHeader(char *hdr)
 {
   uint8_t cmdMode = cmdDet.mode;
   uint16_t cmdReg = cmdDet.reg;
-//  sprintf(message, "%02X%0*X:", (uint8_t)pHeader->mode,
- //          (uint8_t)(sizeof(pHeader->reg) * 2), (uint16_t)pHeader->reg);
-   sprintf(message, "%02X%04X:", cmdMode, cmdReg);
+
+   sprintf(hdr, "%02X%04X:", cmdMode, cmdReg);
 }
 
 void ReplyRinCmd(void)
 {
-  char szTemp[15];
-  char szReply[35];
+  char szTemp[MAX_HEADER_LEN];
+  char szReply[MAX_REPLY_LEN];
 
   memset(szReply, '\0', arrLen(szReply));
   memset(szTemp, '\0', arrLen(szTemp));
@@ -1594,8 +1593,8 @@ void ReplyRinCmd(void)
 
 void WriteRinRegister(void)
 {
-  char szReply[35];
-  char szHead[15];
+  char szReply[MAX_REPLY_LEN];
+  char szHead[MAX_HEADER_LEN];
   
   memset(szReply, '\0', arrLen(szReply));
   memset(szHead, '\0', arrLen(szHead));
@@ -1607,8 +1606,8 @@ void WriteRinRegister(void)
 
 void ExicuteRinCmd(void)
 {
-  char szReply[35];
-  char szHead[15];
+  char szReply[MAX_REPLY_LEN];
+  char szHead[MAX_HEADER_LEN];
 
   memset(szReply, '\0', arrLen(szReply));
   memset(szHead, '\0', arrLen(szHead));

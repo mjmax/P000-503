@@ -940,7 +940,7 @@ typedef struct
 #define BASE_DECIMAL      10
 #define BASE_HEX          16
 #define SOFT_VER_MAIN     1
-#define SOFT_VER_SUB      0
+#define SOFT_VER_SUB      10
 #define HARD_VER_MAIN     0
 #define HARD_VER_SUB      2
 #define SERIAL_NUMBER     1

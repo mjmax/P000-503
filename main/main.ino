@@ -938,8 +938,7 @@ typedef struct
 #define MAX_ADC_VALUE     1024
 #define MIN_ADC_VALUE     0
 #define BASE_DECIMAL      10
-#define GRADF_TO_GRAD     100000
-#define MAX_SAMPLES       144
+#define BASE_HEX          16
 #define SOFT_VER_MAIN     1
 #define SOFT_VER_SUB      0
 #define HARD_VER_MAIN     0
@@ -1005,7 +1004,6 @@ void commsHandle(void);
 bool checkForEnd(char inByte);
 void commandHandle(char *msg);
 bool isMsgValid(char *msg);
-char findCommand( char *header, char *str);
 void showResults(char res, char *str);
 void updateHeader(char *hdr);
 bool LookupRegMode(uint8_t regMode);
@@ -1083,16 +1081,6 @@ void loop()
   idle();
   commsHandle();
 
-/*
-  for (int i = 0; i < 8; i++)
-  {
-    Serial.print(extAdcVal[i]);
-    Serial.print('\t');
-    updateExtAdcVal();
-  }
-  Serial.println();
-  delay(100);
-*/
 }
 
 void ext_adc_1_set(void)
@@ -1137,7 +1125,6 @@ bool updateExtAdcVal(void)
   if(isExtAdcReady(EXT_ADC_1))
   {
     setExtAdcValue(ch_1,extADC_1.getValue());
-    //extAdcVal[ch_1] = extADC_1.getValue();
     ch_1++;
     if (ch_1 >= CHNL_PER_EXT_ADC) 
     {
@@ -1151,7 +1138,6 @@ bool updateExtAdcVal(void)
   if(isExtAdcReady(EXT_ADC_2))
   {
     setExtAdcValue(CHNL_PER_EXT_ADC + ch_2,extADC_2.getValue());
-    //extAdcVal[CHNL_PER_EXT_ADC + ch_2] = extADC_2.getValue();
     ch_2++;
     if (ch_2 >= CHNL_PER_EXT_ADC) 
     {
@@ -1287,16 +1273,6 @@ void idle(void)
   {
     second_count++;
     time_count = 0;
-    /*
-    for (int i = 0; i < 8; i++)
-    {
-      Serial.print(extAdcVal[i]);
-      Serial.print('\t');
-      updateExtAdcVal();
-    }
-    Serial.println();
-  //delay(100);
-  */
     if(status_pin)
       digitalWrite(testLEDPin,HIGH);
      else
@@ -1306,15 +1282,12 @@ void idle(void)
   
   if(second_count > (SECOND_TO_MINUTE - 1))
   {
-    //updateReadings(minute_count);
-    //printMinuteData(minute_count);
     minute_count++;
     second_count = 0;
   }
   
   if (minute_count > (SAMPLE_RATE - 1))
   {
-    //updateSample();
     minute_count = 0;
   }
 }
@@ -1361,20 +1334,7 @@ void commandHandle(char *msg)
   if (isMsgValid(msg))
   {
     cp = strchr(msg,PROTOCOL_SEPERATOR);
-    /*
-    if((uint8_t)(cp) > MIN_CMD_LENGTH)
-    {
-      memset(header, '\0', heade_array_lenght);
-      substr(msg,(uint8_t)cp - MIN_CMD_LENGTH + 1,(uint8_t)cp,header);
-      //strncpy( header , msg , headerLength );
-    }
-    else
-    {
-      headerLength = (uint8_t)(cp - msg);
-      memset(header, '\0', heade_array_lenght);
-      strncpy( header , msg , headerLength );
-    }
-    */
+
     headerLength = (uint8_t)(cp - msg);
     memset(header, '\0', heade_array_lenght);
     strncpy( header , msg , headerLength );
@@ -1391,7 +1351,6 @@ void commandHandle(char *msg)
     }
     
     ProccessCmd();
-    //showResults(res, str); 
   }
 }
 
@@ -1414,19 +1373,9 @@ void updateHeader(char *hdr)
   reg[1] = *hdr++;
   reg[2] = *hdr++;
   reg[3] = *hdr++;
-  //strncpy( mode , hdr , 2);
-  //*hdr++;
-  //*hdr++;
-  //strncpy( reg , hdr , 4);
-  //hex_to_long
-  cmdDet.mode = (uint8_t)strtol(mode,NULL,16);
-  cmdDet.reg = (uint16_t)strtol(reg,NULL,16);
-  //cmdDet.mode = (uint8_t)hex_to_long(mode,2);
-  //cmdDet.reg = (uint16_t)hex_to_long(reg,4);
-        //Serial.print(cmdDet.mode);
-      //Serial.print(",");
-      //Serial.println(cmdDet.reg);
-  
+
+  cmdDet.mode = (uint8_t)strtol(mode,NULL,BASE_HEX);
+  cmdDet.reg = (uint16_t)strtol(reg,NULL,BASE_HEX); 
 }
 
 /*...............................End of Register Related functions.................................... */
@@ -1543,20 +1492,6 @@ static char LookupAndRunCommand(uint16_t reg, char *param_ptr)
   }
 
   return result;
-}
-
-char findCommand( char *header, char *str)
-{
-//  uint8_t count = 0;
-//  char res;
-
-//  for (count = 0 ; (strcmp("END" ,cmdSet[count].command) != 0) ; count++)
-//  {
-//    if (strcmp(header,cmdSet[count].command) == 0)
-//      break;
-//  }
-//  res = cmdSet[count].cmd_fn(str); 
-//  return res; 
 }
 
 long hex_to_long(char *string, unsigned short width)

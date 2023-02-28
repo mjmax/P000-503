@@ -1523,7 +1523,7 @@ void ReplyRinCmd(void)
   MakeHeader(szTemp);
   GetRegValue(cmdDet.reg ,szReply);
   Serial.print(szTemp);
-  Serial.println(tempRegRes);
+  Serial.print(tempRegRes);
 }
 
 void WriteRinRegister(void)
@@ -1536,7 +1536,7 @@ void WriteRinRegister(void)
   GetRegValue(cmdDet.reg ,szReply);
   MakeHeader(szHead);
   Serial.print(szHead);
-  Serial.println(tempRegRes);
+  Serial.print(tempRegRes);
 }
 
 void ExicuteRinCmd(void)
@@ -1549,7 +1549,7 @@ void ExicuteRinCmd(void)
   GetRegValue(cmdDet.reg ,szReply);
   MakeHeader(szHead);
   Serial.print(szHead);
-  Serial.println(tempRegRes);
+  Serial.print(tempRegRes);
 }
 
 void ProccessCmd(void)
@@ -1579,19 +1579,19 @@ void showResults(char res, char *str)
       Serial.print(cmdDet.mode);
       Serial.print(cmdDet.reg);
       Serial.print(":");
-      Serial.println("FAIL");
+      Serial.print("FAIL;");
       break;
     case 21:
       Serial.print(cmdDet.mode);
       Serial.print(cmdDet.reg);
       Serial.print(":");
-      Serial.println("SUCCESS");
+      Serial.print("SUCCESS;");
       break;
     case 22:
       Serial.print(cmdDet.mode);
       Serial.print(cmdDet.reg);
       Serial.print(":");
-      Serial.println(str);
+      Serial.print(str);
       break;
   }
 }
